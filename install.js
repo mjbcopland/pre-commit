@@ -23,7 +23,7 @@ var git = getGitFolderPath(root);
 function getGitFolderPath(currentPath) {
   var git = path.resolve(currentPath, '.git')
 
-  if (!exists(git) || !fs.lstatSync(git).isDirectory()) {
+  if (!exists(git)) {
     console.log('pre-commit:');
     console.log('pre-commit: Not found .git folder in', git);
     
@@ -37,24 +37,24 @@ function getGitFolderPath(currentPath) {
     return getGitFolderPath(newPath);
   }
 
+  //
+  // Resolve git directory for submodules
+  //
+  if (fs.lstatSync(git).isFile()) {
+    var gitinfo = fs.readFileSync(git).toString()
+      , gitdirmatch = /gitdir: (.+)/.exec(gitinfo)
+      , gitdir = gitdirmatch.length == 2 ? gitdirmatch[1] : null;
+  
+    if (gitdir !== null) {
+      git = path.resolve(root, gitdir);
+      hooks = path.resolve(git, 'hooks');
+      precommit = path.resolve(hooks, 'pre-commit');
+    }
+  }
+
   console.log('pre-commit:');
   console.log('pre-commit: Found .git folder in', git);
   return git;
-}
-
-//
-// Resolve git directory for submodules
-//
-if (exists(git) && fs.lstatSync(git).isFile()) {
-  var gitinfo = fs.readFileSync(git).toString()
-    , gitdirmatch = /gitdir: (.+)/.exec(gitinfo)
-    , gitdir = gitdirmatch.length == 2 ? gitdirmatch[1] : null;
-
-  if (gitdir !== null) {
-    git = path.resolve(root, gitdir);
-    hooks = path.resolve(git, 'hooks');
-    precommit = path.resolve(hooks, 'pre-commit');
-  }
 }
 
 //
